@@ -4,6 +4,7 @@ import { useState } from "react";
 export default function Home() {
   const [text, setText] = useState("");
   const [result, setResult] = useState<any>(null);
+  const [task, setTask] = useState("sentiment");
 
   const getColourFromScore = (score: number) => {
     if (score <= -0.6) return "#b91c1c";
@@ -32,7 +33,7 @@ export default function Home() {
     const res = await fetch("http://localhost:3001/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
+      body: JSON.stringify({ text, task })
     });
     setResult(await res.json());
   }
@@ -40,6 +41,17 @@ export default function Home() {
   return (
     <div style={{ padding: 40 }}>
       <h1>Visualize AI Token Importance</h1>
+      <select
+        value={task}
+        onChange={(e) => setTask(e.target.value)}
+        style={{
+          marginBottom: 12,
+          padding: 6,
+          fontSize: 16
+        }}>
+          <option value="sentiment">Sentiment Analysis</option>
+          <option value="emotion">Emotion Classification</option>
+      </select>
       <textarea
         rows={4}
         value={text}

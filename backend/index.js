@@ -16,9 +16,10 @@ app.listen(port, () => {
 });
 
 app.post("/analyze", (req, res) => {
-    const text = req.body.text;
+    const { text, task } = req.body;
   
-    res.json({
+    if (task === "sentiment") {
+      return res.json({
         prediction: "POSITIVE",
         confidence: 0.91,
         tokens: [
@@ -27,6 +28,22 @@ app.post("/analyze", (req, res) => {
           { text: "was", score: 0.0 },
           { text: "great", score: 0.85 }
         ]
-      });   
+      });
+    }
+  
+    if (task === "emotion") {
+      return res.json({
+        prediction: "JOY",
+        confidence: 0.78,
+        tokens: [
+          { text: "I", score: 0.0 },
+          { text: "am", score: 0.0 },
+          { text: "so", score: 0.3 },
+          { text: "excited", score: 0.9 }
+        ]
+      });
+    }
+  
+    res.status(400).json({ error: "Unknown task" });
   });
   

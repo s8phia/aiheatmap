@@ -44,20 +44,73 @@ button, label, select, input, textarea,
 @keyframes slide-in-from-bottom {
   from {
     transform: translateY(1rem);
+    opacity: 0;
   }
   to {
     transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-to-left {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
 .animate-in {
-  animation: fade-in 0.5s ease-out;
+  animation: fade-in 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-in {
-  animation: fade-in 0.5s ease-out;
+  animation: fade-in 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .slide-in-from-bottom-4 {
-  animation: slide-in-from-bottom 0.5s ease-out;
+  animation: slide-in-from-bottom 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.smooth-layout-transition {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slide-in-from-right {
+  from {
+    transform: translateX(2rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.slide-in-from-right {
+  animation: slide-in-from-right 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scale-in {
+  animation: scale-in 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.layout-transition {
+  transition: grid-template-columns 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              max-width 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }

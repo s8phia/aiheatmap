@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 export default function Home() {
   const [text, setText] = useState("");
@@ -48,10 +49,30 @@ export default function Home() {
   const TokenTooltip = ({ token, score, label, children }: { token: string; score: number; label: string; children: React.ReactNode }) => {
     const [showTooltip, setShowTooltip] = useState(false);
     const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [mounted, setMounted] = useState(false);
+    
+    useEffect(() => {
+      setMounted(true);
+    }, []);
     
     const handleMouseMove = (e: React.MouseEvent) => {
       setPosition({ x: e.clientX, y: e.clientY });
     };
+    
+    const tooltipContent = showTooltip && mounted ? (
+      <div 
+        className="fixed px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-2xl whitespace-nowrap pointer-events-none border border-gray-700 dark:border-gray-600"
+        style={{
+          left: `${position.x + 10}px`,
+          top: `${position.y - 60}px`,
+          zIndex: 99999,
+        }}
+      >
+        <div className="font-semibold mb-1 text-white">{token}</div>
+        <div className="text-gray-300 mb-1">{label}</div>
+        <div className="text-blue-300 font-mono">Score: {score.toFixed(3)}</div>
+      </div>
+    ) : null;
     
     return (
       <>
@@ -63,19 +84,7 @@ export default function Home() {
         >
           {children}
         </span>
-        {showTooltip && (
-          <div 
-            className="fixed px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg shadow-2xl z-[9999] whitespace-nowrap pointer-events-none border border-gray-700 dark:border-gray-600"
-            style={{
-              left: `${position.x + 10}px`,
-              top: `${position.y - 60}px`,
-            }}
-          >
-            <div className="font-semibold mb-1 text-white">{token}</div>
-            <div className="text-gray-300 mb-1">{label}</div>
-            <div className="text-blue-300 font-mono">Score: {score.toFixed(3)}</div>
-          </div>
-        )}
+        {mounted && createPortal(tooltipContent, document.body)}
       </>
     );
   };
@@ -256,12 +265,11 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Analysis Controls and Prediction */}
-          <div className="space-y-8">
-            {/* Main Content Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+        {!result ? (
+          <div className="flex justify-center animate-in fade-in">
+            <div className="w-full max-w-2xl transition-all duration-500 ease-out">
+              {/* Main Content Card */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 transition-all duration-500 ease-out">
               {/* Task Selection */}
               <div className="mb-6">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
@@ -325,11 +333,81 @@ export default function Home() {
                   <span>Analyze Text</span>
                 )}
               </button>
+              </div>
             </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in layout-transition">
+            <div className="space-y-8 animate-in fade-in scale-in" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+              {/* Main Content Card */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 transition-all duration-500 ease-out">
+                {/* Task Selection */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    Analysis Type
+                  </label>
+                  <select
+                    value={task}
+                    onChange={(e) => setTask(e.target.value)}
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
+                    disabled={loading}
+                  >
+                    <option value="sentiment">Sentiment Analysis</option>
+                    <option value="emotion">Emotion Classification</option>
+                  </select>
+                </div>
 
-            {/* Prediction Card - Only show when result exists */}
-            {result && (
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Text Input */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                    Text to Analyze
+                  </label>
+                  <textarea
+                    rows={6}
+                    value={text}
+                    onChange={(e) => {
+                      setText(e.target.value);
+                      setError(null);
+                    }}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Enter text to analyze (e.g., 'I love this product! It makes me so happy.')"
+                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                    disabled={loading}
+                  />
+                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    Press Cmd/Ctrl + Enter to analyze
+                  </p>
+                </div>
+
+                {/* Error Message */}
+                {error && (
+                  <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                    <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
+                  </div>
+                )}
+
+                {/* Analyze Button */}
+                <button
+                  onClick={analyze}
+                  disabled={loading || !text.trim()}
+                  className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>Analyzing...</span>
+                    </>
+                  ) : (
+                    <span>Analyze Text</span>
+                  )}
+                </button>
+              </div>
+
+              {/* Prediction Card */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
                 <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                   <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-4">
                     Prediction
@@ -359,13 +437,11 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            )}
 
-          </div>
+            </div>
 
-          {/* Right Column - Token Visualization */}
-          {result && (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Right Column - Token Visualization */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-right" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
               {/* Legend */}
               <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-4">
@@ -385,7 +461,7 @@ export default function Home() {
                 <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   Token Breakdown
                 </h4>
-                <div className="p-6 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 max-h-[600px] overflow-y-auto">
+                <div className="p-6 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600 max-h-[600px] overflow-y-auto relative">
                   <div className="leading-relaxed text-lg break-words">
                     {result.tokens.map((token: any, index: number) => {
                       const label = getLabelFromScore(token.score);
@@ -417,7 +493,7 @@ export default function Home() {
               </div>
 
               {/* Drag and Drop Comparison Box */}
-              <div className="mt-8">
+              <div className="mt-8 bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
                 <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   Compare Tokens
                 </h4>
@@ -543,7 +619,7 @@ export default function Home() {
                 {explanation && (
                   <div className="mt-6 p-6 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
                     <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">
-                      Explanation
+                      AI Explanation
                     </h5>
                     <p className="text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap">
                       {explanation}
@@ -552,8 +628,8 @@ export default function Home() {
                 )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}

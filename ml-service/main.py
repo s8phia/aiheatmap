@@ -69,6 +69,17 @@ def analyze(request: AnalyzeRequest):
     pred_idx = torch.argmax(probs).item()
     prediction = label_map[pred_idx]
     confidence = probs[0][pred_idx].item() 
+    
+    all_probs = probs[0].tolist()
+    all_predictions = [
+        {
+            "label": label_map[i],
+            "probability": float(prob)
+        }
+        for i, prob in enumerate(all_probs)
+    ]
+    all_predictions.sort(key=lambda x: x["probability"], reverse=True)
+    
     logits[0, pred_idx].backward()
     token_importances = embeddings.grad.norm(dim=2)[0]
     signed_token_scores = embeddings.grad.sum(dim=2)[0]
@@ -86,6 +97,7 @@ def analyze(request: AnalyzeRequest):
     return {
         "prediction": prediction,
         "confidence": confidence,
+        "all_predictions": all_predictions,
         "tokens": token_scores
     }
 

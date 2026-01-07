@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, memo, useRef } from "react";
 import { createPortal } from "react-dom";
+import { PieChart } from "@mui/x-charts/PieChart";
 
 export default function Home() {
   const [text, setText] = useState("");
@@ -95,6 +96,96 @@ export default function Home() {
       <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
     </div>
   );
+
+  const DonutChart = memo(({ predictions }: { predictions: any[] }) => {
+    const colors = [
+      "#3b82f6", // blue
+      "#8b5cf6", // purple
+      "#10b981", // green
+      "#f59e0b", // amber
+      "#ef4444", // red
+      "#06b6d4", // cyan
+      "#ec4899", // pink
+    ];
+    
+    // Memoize filtered predictions and chart data
+    const { filteredPredictions, chartData } = useMemo(() => {
+      // Filter out predictions with 0% probability
+      const filtered = predictions.filter(pred => pred.probability > 0);
+      
+      // Prepare data for MUI PieChart
+      const data = filtered.map((pred, index) => ({
+        id: `${pred.label}-${index}`,
+        value: pred.probability * 100,
+        label: pred.label.charAt(0).toUpperCase() + pred.label.slice(1),
+        color: colors[index % colors.length],
+      }));
+      
+      return { filteredPredictions: filtered, chartData: data };
+    }, [predictions]);
+    
+    const chartColors = useMemo(() => 
+      chartData.map(item => item.color),
+      [chartData]
+    );
+    
+    const seriesConfig = useMemo(() => [
+      {
+        data: chartData,
+        innerRadius: 50,
+        outerRadius: 100,
+        arcLabel: (item: any) => `${item.value.toFixed(1)}%`,
+        arcLabelMinAngle: 10,
+      },
+    ], [chartData]);
+    
+    return (
+      <div className="flex flex-col items-center">
+        <PieChart
+          series={seriesConfig}
+          colors={chartColors}
+          width={300}
+          height={300}
+          skipAnimation={true}
+        />
+        <div className="grid grid-cols-2 gap-3 w-full mt-6">
+          {filteredPredictions.map((pred, index) => {
+            const percentage = (pred.probability * 100).toFixed(1);
+            const color = colors[index % colors.length];
+            const isTopPrediction = index === 0;
+            return (
+              <div key={`${pred.label}-${index}`} className="flex items-center gap-2">
+                <div 
+                  className="w-4 h-4 rounded" 
+                  style={{ backgroundColor: color }}
+                />
+                <span className={`text-sm capitalize ${isTopPrediction ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
+                  {pred.label}
+                </span>
+                <span className={`text-sm font-mono ml-auto ${isTopPrediction ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+                  {percentage}%
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }, (prevProps, nextProps) => {
+    // Return true if props are equal (skip re-render), false if different (re-render)
+    if (prevProps.predictions.length !== nextProps.predictions.length) {
+      return false; // Different length, need to re-render
+    }
+    // Check if all predictions are the same
+    const areEqual = prevProps.predictions.every((pred, index) => {
+      const nextPred = nextProps.predictions[index];
+      return pred.label === nextPred.label && 
+             Math.abs(pred.probability - nextPred.probability) < 0.0001;
+    });
+    return areEqual; // Return true if equal (skip re-render), false if different (re-render)
+  });
+  
+  DonutChart.displayName = 'DonutChart';
 
   const analyze = async () => {
     if (!text.trim()) {
@@ -252,17 +343,21 @@ export default function Home() {
     setError(null);
   };
 
+  // Memoize predictions to prevent unnecessary chart re-renders
+  const memoizedPredictions = useMemo(() => {
+    if (!result?.all_predictions) return null;
+    // Return a new array only if the data actually changed
+    return result.all_predictions;
+  }, [result?.all_predictions]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-12 max-w-7xl">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <div className="text-left mb-12">
+          <h1 className="text-3xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             AI Token Importance Visualizer
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Analyze text sentiment or emotion and visualize which tokens are most important to the AI's decision
-          </p>
         </div>
 
         {!result ? (
@@ -409,32 +504,10 @@ export default function Home() {
               {/* Prediction Card */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700 animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
                 <div className="p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-4">
-                    Prediction
+                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-6">
+                    Prediction Probabilities
                   </h3>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-3xl font-bold text-gray-900 dark:text-white capitalize mb-2">
-                        {result.prediction}
-                      </p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">
-                        Confidence
-                      </h3>
-                      <div className="flex items-baseline gap-3">
-                        <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                          {(result.confidence * 100).toFixed(1)}%
-                        </p>
-                        <div className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-blue-600 to-purple-600 transition-all duration-500"
-                            style={{ width: `${result.confidence * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  {memoizedPredictions && <DonutChart predictions={memoizedPredictions} />}
                 </div>
               </div>
 

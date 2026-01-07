@@ -154,15 +154,15 @@ export default function Home() {
             const color = colors[index % colors.length];
             const isTopPrediction = index === 0;
             return (
-              <div key={`${pred.label}-${index}`} className="flex items-center gap-2">
+              <div key={`${pred.label}-${index}`} className="flex items-center gap-2 [&_span]:text-gray-700 [&_span]:dark:text-[hsl(220,15%,92%)]">
                 <div 
                   className="w-4 h-4 rounded" 
                   style={{ backgroundColor: color }}
                 />
-                <span className={`text-sm capitalize ${isTopPrediction ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-700 dark:text-[hsl(220,15%,92%)]'}`}>
+                <span className={`text-sm capitalize ${isTopPrediction ? 'font-bold' : ''}`}>
                   {pred.label}
                 </span>
-                <span className={`text-sm font-mono ml-auto ${isTopPrediction ? 'font-bold text-gray-900 dark:text-white' : 'text-gray-600 dark:text-[hsl(220,15%,92%)]'}`}>
+                <span className={`text-sm font-mono ml-auto ${isTopPrediction ? 'font-bold' : ''}`}>
                   {percentage}%
                 </span>
               </div>
@@ -434,7 +434,7 @@ export default function Home() {
               <button
                 onClick={analyze}
                 disabled={loading || !text.trim()}
-                className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2"
+                className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] active:shadow-[0_0_25px_rgba(255,255,255,0.8)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -506,7 +506,7 @@ export default function Home() {
                 <button
                   onClick={analyze}
                   disabled={loading || !text.trim()}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2"
+                  className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] active:shadow-[0_0_25px_rgba(255,255,255,0.8)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
@@ -574,7 +574,7 @@ export default function Home() {
                             onDragStart={(e) => handleDragStart(e, token)}
                             className={`inline-block px-2 py-1 mb-1 mr-1 rounded-2xl ${getColourFromScore(
                               token.score
-                            )} transition-all hover:scale-110 hover:shadow-md cursor-move select-none`}
+                            )} transition-all hover:scale-110 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)] active:shadow-[0_0_20px_rgba(255,255,255,0.7)] cursor-move select-none`}
                           >
                             {cleanedToken}
                           </span>
@@ -605,19 +605,7 @@ export default function Home() {
                 >
                   {droppedTokens.length === 0 ? (
                     <div className="text-center py-8">
-                      <svg
-                        className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500 mb-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                        />
-                      </svg>
+                      
                       <p className="text-gray-600 dark:text-[hsl(220,15%,92%)] font-medium">
                         Drag and drop 2 tokens here to compare
                       </p>
@@ -633,7 +621,7 @@ export default function Home() {
                             key={index}
                             className={`px-4 py-2 rounded-2xl ${getColourFromScore(
                               token.score
-                            )} flex items-center gap-2`}
+                            )} flex items-center gap-2 hover:shadow-[0_0_15px_rgba(255,255,255,0.5)] active:shadow-[0_0_20px_rgba(255,255,255,0.7)] transition-all`}
                           >
                             <span className="font-medium">{token.text}</span>
                             <button
@@ -644,7 +632,7 @@ export default function Home() {
                                   setExplanation(null);
                                 }
                               }}
-                              className="ml-2 hover:opacity-70 transition-opacity"
+                              className="ml-2 hover:opacity-70 hover:shadow-[0_0_10px_rgba(255,255,255,0.5)] active:shadow-[0_0_15px_rgba(255,255,255,0.7)] transition-all rounded"
                               aria-label="Remove token"
                             >
                               <svg
@@ -672,7 +660,7 @@ export default function Home() {
                       {droppedTokens.length > 0 && (
                         <button
                           onClick={clearComparison}
-                          className="text-sm text-gray-600 dark:text-[hsl(220,15%,92%)] hover:text-gray-900 dark:hover:text-gray-200 underline"
+                          className="text-sm text-gray-600 dark:text-[hsl(220,15%,92%)] hover:text-gray-900 dark:hover:text-gray-200 hover:shadow-[0_0_10px_rgba(255,255,255,0.5)] active:shadow-[0_0_15px_rgba(255,255,255,0.7)] transition-all rounded px-2 py-1 underline"
                         >
                           Clear comparison
                         </button>

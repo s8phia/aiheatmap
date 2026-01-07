@@ -1,8 +1,105 @@
 "use client";
-import { useState, useEffect, useMemo, memo, useRef } from "react";
+import { useState, useEffect, useMemo, memo, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { PieChart } from "@mui/x-charts/PieChart";
 import { GradientCard } from "@/components/GradientCard";
+
+// Extract InputForm component to prevent unnecessary re-renders
+const InputForm = memo(({ 
+  text, 
+  setText, 
+  task, 
+  setTask, 
+  loading, 
+  error, 
+  onAnalyze, 
+  onKeyDown 
+}: {
+  text: string;
+  setText: (text: string) => void;
+  task: string;
+  setTask: (task: string) => void;
+  loading: boolean;
+  error: string | null;
+  onAnalyze: () => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+}) => {
+  return (
+    <GradientCard className="bg-white dark:bg-[hsl(230,22%,10%)] shadow-xl">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Text Analysis Input</h2>
+      {/* Task Selection */}
+      <div className="mb-6">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-[hsl(220,15%,92%)] mb-3">
+          Analysis Type
+        </label>
+        <select
+          value={task}
+          onChange={(e) => setTask(e.target.value)}
+          className="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
+          disabled={loading}
+        >
+          <option value="sentiment">Sentiment Analysis</option>
+          <option value="emotion">Emotion Classification</option>
+        </select>
+      </div>
+
+      {/* Text Input */}
+      <div className="mb-6">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-[hsl(220,15%,92%)] mb-3">
+          Text to Analyze
+        </label>
+        <textarea
+          rows={6}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Enter text to analyze (e.g., 'I love this product! It makes me so happy.')"
+          className="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+          disabled={loading}
+        />
+        <p className="mt-2 text-xs text-gray-500 dark:text-[hsl(220,15%,92%)]">
+          Press Cmd/Ctrl + Enter to analyze
+        </p>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
+        </div>
+      )}
+
+      {/* Analyze Button */}
+      <button
+        onClick={onAnalyze}
+        disabled={loading || !text.trim()}
+        className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] active:shadow-[0_0_25px_rgba(255,255,255,0.8)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2"
+      >
+        {loading ? (
+          <>
+            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Analyzing...</span>
+          </>
+        ) : (
+          <span>Analyze Text</span>
+        )}
+      </button>
+    </GradientCard>
+  );
+}, (prevProps, nextProps) => {
+  // Custom comparison function for memo
+  return (
+    prevProps.text === nextProps.text &&
+    prevProps.task === nextProps.task &&
+    prevProps.loading === nextProps.loading &&
+    prevProps.error === nextProps.error
+  );
+});
+
+InputForm.displayName = 'InputForm';
 
 export default function Home() {
   const [text, setText] = useState("");
@@ -183,7 +280,7 @@ export default function Home() {
   
   DonutChart.displayName = 'DonutChart';
 
-  const analyze = async () => {
+  const analyzeCallback = useCallback(async () => {
     if (!text.trim()) {
       setError("Please enter some text to analyze");
       return;
@@ -191,7 +288,8 @@ export default function Home() {
 
     setLoading(true);
     setError(null);
-    setResult(null);
+    // Don't clear result immediately - keep previous result visible during loading
+    // Only clear dropped tokens and explanation when starting new analysis
     setDroppedTokens([]);
     setExplanation(null);
 
@@ -214,13 +312,18 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [text, task]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-      analyze();
+      analyzeCallback();
     }
-  };
+  }, [analyzeCallback]);
+
+  const handleTextChange = useCallback((newText: string) => {
+    setText(newText);
+    setError(null);
+  }, []);
 
   const handleDragStart = (e: React.DragEvent, token: any) => {
     e.dataTransfer.setData("application/json", JSON.stringify(token));
@@ -376,145 +479,32 @@ export default function Home() {
         {!result ? (
           <div className="flex justify-center animate-in fade-in">
             <div className="w-full max-w-2xl transition-all duration-500 ease-out">
-              {/* Main Content Card */}
-              <GradientCard className="bg-white dark:bg-[hsl(230,22%,10%)] shadow-xl">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Text Analysis Input</h2>
-              {/* Task Selection */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-[hsl(220,15%,92%)] mb-3">
-                  Analysis Type
-                </label>
-                <select
-                  value={task}
-                  onChange={(e) => setTask(e.target.value)}
-                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
-                  disabled={loading}
-                >
-                  <option value="sentiment">Sentiment Analysis</option>
-                  <option value="emotion">Emotion Classification</option>
-                </select>
-              </div>
-
-              {/* Text Input */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 dark:text-[hsl(220,15%,92%)] mb-3">
-                  Text to Analyze
-                </label>
-                <textarea
-                  rows={6}
-                  value={text}
-                  onChange={(e) => {
-                    setText(e.target.value);
-                    setError(null);
-                  }}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Enter text to analyze (e.g., 'I love this product! It makes me so happy.')"
-                  className="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                  disabled={loading}
-                />
-                <p className="mt-2 text-xs text-gray-500 dark:text-[hsl(220,15%,92%)]">
-                  Press Cmd/Ctrl + Enter to analyze
-                </p>
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                  <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
-                </div>
-              )}
-
-              {/* Analyze Button */}
-              <button
-                onClick={analyze}
-                disabled={loading || !text.trim()}
-                className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] active:shadow-[0_0_25px_rgba(255,255,255,0.8)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span>Analyzing...</span>
-                  </>
-                ) : (
-                  <span>Analyze Text</span>
-                  )}
-                </button>
-              </GradientCard>
+              <InputForm
+                text={text}
+                setText={handleTextChange}
+                task={task}
+                setTask={setTask}
+                loading={loading}
+                error={error}
+                onAnalyze={analyzeCallback}
+                onKeyDown={handleKeyDown}
+              />
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in layout-transition">
             <div className="space-y-8 animate-in fade-in scale-in" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
               {/* Main Content Card */}
-              <GradientCard className="bg-white dark:bg-[hsl(230,22%,10%)] shadow-xl">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Text Analysis Input</h2>
-                {/* Task Selection */}
-                <div className="mb-6">
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-[hsl(220,15%,92%)] mb-3">
-                    Analysis Type
-                  </label>
-                  <select
-                    value={task}
-                    onChange={(e) => setTask(e.target.value)}
-                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all cursor-pointer"
-                    disabled={loading}
-                  >
-                    <option value="sentiment">Sentiment Analysis</option>
-                    <option value="emotion">Emotion Classification</option>
-                  </select>
-                </div>
-
-                {/* Text Input */}
-                <div className="mb-6">
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-[hsl(220,15%,92%)] mb-3">
-                    Text to Analyze
-                  </label>
-                  <textarea
-                    rows={6}
-                    value={text}
-                    onChange={(e) => {
-                      setText(e.target.value);
-                      setError(null);
-                    }}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Enter text to analyze (e.g., 'I love this product! It makes me so happy.')"
-                    className="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
-                    disabled={loading}
-                  />
-                  <p className="mt-2 text-xs text-gray-500 dark:text-[hsl(220,15%,92%)]">
-                    Press Cmd/Ctrl + Enter to analyze
-                  </p>
-                </div>
-
-                {/* Error Message */}
-                {error && (
-                  <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                    <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
-                  </div>
-                )}
-
-                {/* Analyze Button */}
-                <button
-                  onClick={analyze}
-                  disabled={loading || !text.trim()}
-                  className="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-[0_0_20px_rgba(255,255,255,0.6)] active:shadow-[0_0_25px_rgba(255,255,255,0.8)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span>Analyzing...</span>
-                    </>
-                  ) : (
-                    <span>Analyze Text</span>
-                  )}
-                </button>
-              </GradientCard>
+              <InputForm
+                text={text}
+                setText={handleTextChange}
+                task={task}
+                setTask={setTask}
+                loading={loading}
+                error={error}
+                onAnalyze={analyzeCallback}
+                onKeyDown={handleKeyDown}
+              />
 
               {/* Prediction Card */}
               <GradientCard className="bg-white dark:bg-[hsl(230,22%,10%)] shadow-xl animate-in fade-in slide-in-from-bottom-4" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>

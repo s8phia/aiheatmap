@@ -1,0 +1,29 @@
+# Project Dependencies Overview
+# 
+# Note: Node.js projects (frontend/backend) use package.json and npm install
+# Python projects (ml-service) use requirements.txt and pip install
+
+# =============================================================================
+# ML Service (Python)
+# =============================================================================
+# Install: cd ml-service && pip install -r requirements.txt
+# See: ml-service/requirements.txt
+
+fastapi>=0.127.0
+uvicorn>=0.40.0
+transformers>=4.57.0
+torch>=2.0.0
+pydantic>=2.0.0
+
+# =============================================================================
+# Frontend (Node.js)
+# =============================================================================
+# Install: cd frontend && npm install
+# See: frontend/package.json and frontend/requirements.txt
+
+# =============================================================================
+# Backend (Node.js)
+# =============================================================================
+# Install: cd backend && npm install
+# See: backend/package.json and backend/requirements.txt
+

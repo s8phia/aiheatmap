@@ -108,3 +108,9 @@ MIT License
 ---
 
 Made by Sophia 2026 • Powered by Hugging Face Transformers
+
+## Demo
+
+https://github.com/user-attachments/assets/2e5af5c2-c6dc-4296-907a-ae5fb80067d9
+
+
